@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Bharath & Bhavya — Reception"
+description = "A reception-only wedding invitation for Bharath and Bhavya, celebrating with family and friends on 25 October 2026 in Triprayar."
+version = "1.0.0"
+id = "artifacts/bharath-bhavya-reception"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22979
+
+[services.development]
+run = "pnpm --filter @workspace/bharath-bhavya-reception run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/bharath-bhavya-reception", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/bharath-bhavya-reception/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22979"
+BASE_PATH = "/"
