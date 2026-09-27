@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ArrowDown, ArrowRight, CalendarDays, Check, Clock3, MapPin } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -30,10 +30,51 @@ function getCountdown(): Countdown {
 
 function Home() {
   const [countdown, setCountdown] = useState<Countdown>(getCountdown);
+  const [coverVisible, setCoverVisible] = useState(true);
+  const [coverPhase, setCoverPhase] = useState<'closed' | 'opening'>('closed');
   const [guestName, setGuestName] = useState('');
   const [attendance, setAttendance] = useState('');
   const [formError, setFormError] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const coverButtonRef = useRef<HTMLButtonElement>(null);
+  const openingTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (coverVisible) coverButtonRef.current?.focus();
+  }, [coverVisible]);
+
+  useEffect(() => {
+    const htmlOverflow = document.documentElement.style.overflow;
+    const bodyOverflow = document.body.style.overflow;
+
+    if (coverVisible) {
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.documentElement.style.overflow = htmlOverflow;
+      document.body.style.overflow = bodyOverflow;
+    };
+  }, [coverVisible]);
+
+  useEffect(() => () => {
+    if (openingTimerRef.current) window.clearTimeout(openingTimerRef.current);
+  }, []);
+
+  const openInvitation = () => {
+    if (coverPhase !== 'closed') return;
+
+    setCoverPhase('opening');
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setCoverVisible(false);
+      return;
+    }
+
+    openingTimerRef.current = window.setTimeout(() => {
+      setCoverVisible(false);
+    }, 1320);
+  };
 
   useEffect(() => {
     const timer = window.setInterval(() => setCountdown(getCountdown()), 1000);
@@ -56,6 +97,54 @@ function Home() {
 
   return (
     <main className="invitation-page" data-testid="page-reception-invitation">
+      {coverVisible && (
+        <div
+          className={`invitation-cover ${coverPhase === 'opening' ? 'is-opening' : ''}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="invitation-cover-title"
+          data-testid="invitation-cover"
+        >
+          <div className="cover-panels" aria-hidden="true">
+            <div className="cover-panel cover-panel-left" />
+            <div className="cover-panel cover-panel-right" />
+          </div>
+          <div className="cover-atmosphere" aria-hidden="true">
+            <span className="cover-star cover-star-one" />
+            <span className="cover-star cover-star-two" />
+            <span className="cover-star cover-star-three" />
+            <span className="cover-arc cover-arc-one" />
+            <span className="cover-arc cover-arc-two" />
+          </div>
+          <div className="cover-edge" aria-hidden="true" />
+          <div className="cover-content">
+            <p className="cover-kicker">An evening to remember</p>
+            <div className="cover-mark" aria-label="B and B monogram" data-testid="text-cover-monogram">
+              <span>B</span><i>&amp;</i><span>B</span>
+            </div>
+            <p className="cover-overline">Together with their families</p>
+            <h1 id="invitation-cover-title" className="cover-title" data-testid="text-cover-couple-name">
+              <span>Bharath</span>
+              <em>&amp;</em>
+              <span>Bhavya</span>
+            </h1>
+            <div className="cover-rule" aria-hidden="true"><span /></div>
+            <p className="cover-date" data-testid="text-cover-date">Sunday <b>·</b> 25 October 2026</p>
+            <p className="cover-place">Reception · Triprayar</p>
+            <button
+              ref={coverButtonRef}
+              className="cover-open-button"
+              onClick={openInvitation}
+              type="button"
+              data-testid="button-open-invitation"
+            >
+              <span>Open invitation</span>
+              <ArrowDown aria-hidden="true" />
+            </button>
+            <p className="cover-hint">Tap to unfold the evening</p>
+          </div>
+        </div>
+      )}
       <section className="hero" data-testid="section-hero">
         <div className="hero-orbit" aria-hidden="true" />
         <div className="hero-inner">
