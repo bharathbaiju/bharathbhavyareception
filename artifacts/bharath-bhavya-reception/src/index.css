@@ -400,6 +400,7 @@
   align-items: center;
   justify-content: center;
   isolation: isolate;
+  overflow: hidden;
   background:
     radial-gradient(circle at 50% 35%, rgba(255,246,215,.86), transparent 26rem),
     radial-gradient(circle at 12% 75%, rgba(228,200,187,.28), transparent 24rem),
@@ -540,6 +541,29 @@
 .map-link { color: var(--secondary); font: 600 10px var(--app-font-sans); letter-spacing: .16em; text-transform: uppercase; text-decoration: none; border-bottom: 1px solid rgba(239,226,201,.5); padding-bottom: 4px; display: inline-block; margin-top: 14px; transition: color .2s ease, border-color .2s ease; }
 .map-link:hover { color: var(--paper); border-color: var(--paper); }
 
+.calendar-actions { display: flex; flex-direction: column; gap: 10px; }
+.calendar-actions-label { font-size: 10px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--secondary); }
+.calendar-actions-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.calendar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(239,226,201,.5);
+  border-radius: 999px;
+  padding: 9px 15px;
+  color: var(--paper);
+  background: rgba(239,226,201,.08);
+  font: 600 10px var(--app-font-sans);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .25s ease, background-color .25s ease, border-color .25s ease;
+}
+.calendar-btn:hover { transform: translateY(-2px); background: rgba(239,226,201,.18); border-color: rgba(239,226,201,.9); }
+.calendar-btn svg { width: 14px; height: 14px; }
+.calendar-actions-note { margin: 0; font-size: 11px; color: #e9cfc6; opacity: .8; }
+
 .countdown-section { background: #f5ead5; text-align: center; }
 .countdown-section .section-title { max-width: 620px; margin: 0 auto; }
 .countdown-grid { display: grid; grid-template-columns: repeat(4, 1fr); max-width: 720px; margin: 54px auto 0; border-top: 1px solid rgba(157,77,93,.3); border-bottom: 1px solid rgba(157,77,93,.3); }
@@ -653,6 +677,131 @@
   .timeline-copy h3 { font-size: 24px; }
   .rsvp-copy { position: static; }
   .rsvp-form, .rsvp-success { padding: 28px 22px; }
+}
+
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 60;
+  transform-origin: 0% 50%;
+  background: linear-gradient(90deg, var(--rose), var(--gold));
+  box-shadow: 0 0 12px rgba(198, 146, 67, .55);
+}
+
+.petal-field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.petal {
+  position: absolute;
+  top: -8%;
+  left: var(--petal-left, 12%);
+  width: 9px;
+  height: 12px;
+  border-radius: 60% 5% 60% 5%;
+  background: linear-gradient(135deg, var(--rose), var(--gold));
+  opacity: 0;
+  animation: petal-fall var(--petal-duration, 16s) linear infinite;
+  animation-delay: var(--petal-delay, 0s);
+}
+.petal:nth-child(1) { --petal-left: 6%; --petal-duration: 15s; --petal-delay: -1s; }
+.petal:nth-child(2) { --petal-left: 18%; --petal-duration: 19s; --petal-delay: -6s; }
+.petal:nth-child(3) { --petal-left: 30%; --petal-duration: 14s; --petal-delay: -3s; }
+.petal:nth-child(4) { --petal-left: 44%; --petal-duration: 21s; --petal-delay: -9s; }
+.petal:nth-child(5) { --petal-left: 58%; --petal-duration: 16s; --petal-delay: -12s; }
+.petal:nth-child(6) { --petal-left: 70%; --petal-duration: 18s; --petal-delay: -4s; }
+.petal:nth-child(7) { --petal-left: 82%; --petal-duration: 13s; --petal-delay: -7s; }
+.petal:nth-child(8) { --petal-left: 92%; --petal-duration: 20s; --petal-delay: -10s; }
+.petal:nth-child(9) { --petal-left: 50%; --petal-duration: 17s; --petal-delay: -2s; }
+
+@keyframes petal-fall {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(0deg); }
+  8% { opacity: .55; }
+  50% { transform: translate3d(26px, 55vh, 0) rotate(180deg); }
+  92% { opacity: .4; }
+  100% { opacity: 0; transform: translate3d(-18px, 115vh, 0) rotate(320deg); }
+}
+
+.hero-orbit { animation: orbit-spin 90s linear infinite; }
+@keyframes orbit-spin {
+  from { transform: rotate(-18deg) scaleY(.68); }
+  to { transform: rotate(342deg) scaleY(.68); }
+}
+
+.seal-burst {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 12;
+}
+.seal-spark {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cover-gold, var(--gold));
+  box-shadow: 0 0 8px rgba(217, 174, 97, .85);
+}
+.seal-flash {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(247, 235, 213, .9), transparent 70%);
+}
+
+.flip-digits {
+  display: inline-flex;
+  overflow: hidden;
+  vertical-align: bottom;
+  height: 1em;
+  line-height: 1;
+}
+.flip-digits-value { display: inline-block; }
+
+.moment {
+  transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .45s ease;
+}
+.moment:hover {
+  transform: translateY(-8px) scale(1.015);
+  box-shadow: 0 24px 46px rgba(74, 41, 53, .22);
+}
+
+.floating-rsvp { animation: floating-pulse 3.2s ease-in-out infinite; }
+@keyframes floating-pulse {
+  0%, 100% { transform: translateY(0); box-shadow: 0 10px 25px rgba(74,41,53,.18); }
+  50% { transform: translateY(-5px); box-shadow: 0 16px 32px rgba(74,41,53,.26); }
+}
+
+.music-toggle svg { transition: transform .3s ease; }
+.music-toggle[aria-pressed="true"] svg { animation: music-pulse 2.4s ease-in-out infinite; }
+@keyframes music-pulse {
+  0%, 100% { transform: scale(1); opacity: .85; }
+  50% { transform: scale(1.16); opacity: 1; }
+}
+
+.submit-button, .hero-cta, .cover-open-button {
+  position: relative;
+  overflow: hidden;
+}
+.submit-button::after, .hero-cta::after, .cover-open-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform .6s ease;
+}
+.submit-button:hover::after, .hero-cta:hover::after, .cover-open-button:hover::after {
+  transform: translateX(120%);
 }
 
 @media (prefers-reduced-motion: reduce) {

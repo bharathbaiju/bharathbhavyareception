@@ -1,7 +1,13 @@
-import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
+import { type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ArrowDown, ArrowRight, CalendarDays, Check, Clock3, MapPin, Volume2, VolumeX } from 'lucide-react';
+import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
+import { ArrowDown, ArrowRight, CalendarDays, CalendarPlus, Check, Clock3, MapPin, Volume2, VolumeX } from 'lucide-react';
+import { AddToCalendar } from '@/components/add-to-calendar';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { FlipDigits } from '@/components/flip-digit';
+import { Petals } from '@/components/petals';
+import { Reveal, RevealGroup, RevealItem } from '@/components/reveal';
+import { SealBurst } from '@/components/seal-burst';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
@@ -37,12 +43,37 @@ function Home() {
   const [formError, setFormError] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [musicEnabled, setMusicEnabled] = useState(true);
+  const [sealBursting, setSealBursting] = useState(false);
   const coverButtonRef = useRef<HTMLButtonElement>(null);
   const openingTimerRef = useRef<number | null>(null);
+  const burstTimerRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const musicGainRef = useRef<GainNode | null>(null);
   const musicNodesRef = useRef<OscillatorNode[]>([]);
   const chordTimerRef = useRef<number | null>(null);
+
+  const prefersReducedMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll();
+  const scrollProgressScale = useSpring(scrollYProgress, { stiffness: 120, damping: 26, mass: 0.3 });
+
+  const tiltX = useMotionValue(0);
+  const tiltY = useMotionValue(0);
+  const springTiltX = useSpring(tiltX, { stiffness: 140, damping: 16 });
+  const springTiltY = useSpring(tiltY, { stiffness: 140, damping: 16 });
+  const letterRotateX = useTransform(springTiltY, [-0.5, 0.5], [8, -8]);
+  const letterRotateY = useTransform(springTiltX, [-0.5, 0.5], [-10, 10]);
+
+  const handleLetterPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (prefersReducedMotion) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    tiltX.set((event.clientX - bounds.left) / bounds.width - 0.5);
+    tiltY.set((event.clientY - bounds.top) / bounds.height - 0.5);
+  };
+
+  const handleLetterPointerLeave = () => {
+    tiltX.set(0);
+    tiltY.set(0);
+  };
 
   useEffect(() => {
     if (coverVisible) coverButtonRef.current?.focus();
@@ -65,6 +96,7 @@ function Home() {
 
   useEffect(() => () => {
     if (openingTimerRef.current) window.clearTimeout(openingTimerRef.current);
+    if (burstTimerRef.current) window.clearTimeout(burstTimerRef.current);
     if (chordTimerRef.current) window.clearInterval(chordTimerRef.current);
     musicNodesRef.current.forEach((node) => {
       try {
@@ -156,6 +188,8 @@ function Home() {
       return;
     }
 
+    setSealBursting(true);
+    burstTimerRef.current = window.setTimeout(() => setSealBursting(false), 900);
     openingTimerRef.current = window.setTimeout(() => {
       setCoverVisible(false);
     }, 1320);
@@ -182,6 +216,9 @@ function Home() {
 
   return (
     <main className="invitation-page" data-testid="page-reception-invitation">
+      {!coverVisible && (
+        <motion.div className="scroll-progress" style={{ scaleX: scrollProgressScale }} aria-hidden="true" />
+      )}
       {coverVisible && (
         <div
           className={`invitation-cover ${coverPhase === 'opening' ? 'is-opening' : ''}`}
@@ -195,7 +232,12 @@ function Home() {
              <span className="cover-thread cover-thread-one" />
              <span className="cover-thread cover-thread-two" />
            </div>
-           <div className="letter-stage">
+           <motion.div
+             className="letter-stage"
+             style={{ rotateX: letterRotateX, rotateY: letterRotateY }}
+             onPointerMove={handleLetterPointerMove}
+             onPointerLeave={handleLetterPointerLeave}
+           >
              <div className="letter-shadow" aria-hidden="true" />
              <div className="letter-paper">
                <div className="letter-fold letter-fold-back" aria-hidden="true" />
@@ -222,6 +264,7 @@ function Home() {
                    data-testid="button-open-letter"
                  >
                    <span className="cover-mark" aria-hidden="true"><span>B</span><i>&amp;</i><span>B</span></span>
+                   <SealBurst active={sealBursting} />
                  </button>
                  <button
                    className="cover-open-button"
@@ -235,7 +278,7 @@ function Home() {
                  <p className="cover-hint">Break the seal to unfold the evening</p>
                </div>
              </div>
-           </div>
+           </motion.div>
         </div>
       )}
        {!coverVisible && (
@@ -253,6 +296,7 @@ function Home() {
        )}
       <section className="hero" data-testid="section-hero">
         <div className="hero-orbit" aria-hidden="true" />
+        <Petals />
         <div className="hero-inner">
           <p className="eyebrow" data-testid="text-hero-eyebrow">Together with their families</p>
           <div className="monogram" aria-label="B and B monogram" data-testid="text-monogram">B&amp;B</div>
@@ -269,30 +313,30 @@ function Home() {
         </div>
       </section>
 
-      <section className="section welcome-section" data-testid="section-welcome">
-        <div className="section-inner welcome-grid">
-          <div>
+      <Reveal as="section" className="section welcome-section" delay={0} data-testid="section-welcome">
+        <RevealGroup className="section-inner welcome-grid">
+          <RevealItem>
             <p className="section-kicker">A little note</p>
             <h2 className="section-title">Come as you are.<br />Leave with a memory.</h2>
-          </div>
-          <div className="welcome-note">
+          </RevealItem>
+          <RevealItem className="welcome-note">
             <strong>We would love to share this beautiful evening with you.</strong>
             Dinner, laughter and blessings mean more when the people we love are close. Thank you for being part of our story.
-          </div>
-        </div>
-      </section>
+          </RevealItem>
+        </RevealGroup>
+      </Reveal>
 
-      <section className="section event-section" data-testid="section-event-details">
-        <div className="section-inner event-grid">
-          <div>
+      <Reveal as="section" className="section event-section" data-testid="section-event-details">
+        <RevealGroup className="section-inner event-grid">
+          <RevealItem>
             <p className="section-kicker">The reception</p>
             <h2 className="section-title">One evening,<br />held close.</h2>
             <div className="date-lockup">
               <strong>25 / 10 / 26</strong>
               <span>Sunday · 6:30 PM – 9:30 PM</span>
             </div>
-          </div>
-          <div className="event-details">
+          </RevealItem>
+          <RevealItem className="event-details">
             <div className="detail-row">
               <div className="detail-label"><CalendarDays size={14} aria-hidden="true" /> Date</div>
               <div className="detail-value" data-testid="text-event-date">Sunday, 25 October 2026</div>
@@ -317,66 +361,70 @@ function Home() {
                 </a>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
+            <div className="detail-row">
+              <div className="detail-label"><CalendarPlus size={14} aria-hidden="true" /> Save</div>
+              <div className="detail-value"><AddToCalendar /></div>
+            </div>
+          </RevealItem>
+        </RevealGroup>
+      </Reveal>
 
-      <section className="section countdown-section" data-testid="section-countdown">
+      <Reveal as="section" className="section countdown-section" data-testid="section-countdown">
         <div className="section-inner">
           <p className="section-kicker">Until we gather</p>
           <h2 className="section-title">Counting the moments<br />until we see you.</h2>
           <div className="countdown-grid" aria-live="polite" data-testid="countdown-timer">
-            <div className="count-unit"><span className="count-number" data-testid="countdown-days">{String(countdown.days).padStart(2, '0')}</span><span className="count-label">Days</span></div>
-            <div className="count-unit"><span className="count-number" data-testid="countdown-hours">{String(countdown.hours).padStart(2, '0')}</span><span className="count-label">Hours</span></div>
-            <div className="count-unit"><span className="count-number" data-testid="countdown-minutes">{String(countdown.minutes).padStart(2, '0')}</span><span className="count-label">Minutes</span></div>
-            <div className="count-unit"><span className="count-number" data-testid="countdown-seconds">{String(countdown.seconds).padStart(2, '0')}</span><span className="count-label">Seconds</span></div>
+            <div className="count-unit"><span className="count-number"><FlipDigits value={String(countdown.days).padStart(2, '0')} testId="countdown-days" /></span><span className="count-label">Days</span></div>
+            <div className="count-unit"><span className="count-number"><FlipDigits value={String(countdown.hours).padStart(2, '0')} testId="countdown-hours" /></span><span className="count-label">Hours</span></div>
+            <div className="count-unit"><span className="count-number"><FlipDigits value={String(countdown.minutes).padStart(2, '0')} testId="countdown-minutes" /></span><span className="count-label">Minutes</span></div>
+            <div className="count-unit"><span className="count-number"><FlipDigits value={String(countdown.seconds).padStart(2, '0')} testId="countdown-seconds" /></span><span className="count-label">Seconds</span></div>
           </div>
         </div>
-      </section>
+      </Reveal>
 
-      <section className="section moments-section" data-testid="section-moments">
+      <Reveal as="section" className="section moments-section" data-testid="section-moments">
         <div className="section-inner">
-          <div className="moments-head">
-            <div>
+          <RevealGroup className="moments-head">
+            <RevealItem>
               <p className="section-kicker">Little visual notes</p>
               <h2 className="section-title">The feeling<br />of the evening.</h2>
-            </div>
-            <p>Soft light, familiar voices, and a room full of people who matter.</p>
-          </div>
-          <div className="moment-grid" aria-label="Decorative memory moments">
-            <div className="moment moment-one moment-large"><span className="moment-caption">Warm light</span></div>
-            <div className="moment moment-two"><span className="moment-caption">Good company</span></div>
-            <div className="moment moment-three"><span className="moment-caption">A shared table</span></div>
-            <div className="moment moment-four"><span className="moment-caption">Beautiful beginnings</span></div>
-          </div>
+            </RevealItem>
+            <RevealItem as="p">Soft light, familiar voices, and a room full of people who matter.</RevealItem>
+          </RevealGroup>
+          <RevealGroup className="moment-grid" aria-label="Decorative memory moments">
+            <RevealItem className="moment moment-one moment-large"><span className="moment-caption">Warm light</span></RevealItem>
+            <RevealItem className="moment moment-two"><span className="moment-caption">Good company</span></RevealItem>
+            <RevealItem className="moment moment-three"><span className="moment-caption">A shared table</span></RevealItem>
+            <RevealItem className="moment moment-four"><span className="moment-caption">Beautiful beginnings</span></RevealItem>
+          </RevealGroup>
         </div>
-      </section>
+      </Reveal>
 
-      <section className="section timeline-section" data-testid="section-timeline">
+      <Reveal as="section" className="section timeline-section" data-testid="section-timeline">
         <div className="section-inner timeline-layout">
           <div>
             <p className="section-kicker">The shape of the evening</p>
             <h2 className="section-title">No itinerary.<br />Just togetherness.</h2>
           </div>
-          <div className="timeline">
-            <div className="timeline-row">
+          <RevealGroup className="timeline">
+            <RevealItem className="timeline-row">
               <div className="timeline-time">6:30 PM</div>
               <div className="timeline-copy"><h3>Welcome</h3><p>Arrive, settle in, and find the people you came to see.</p></div>
-            </div>
-            <div className="timeline-row">
+            </RevealItem>
+            <RevealItem className="timeline-row">
               <div className="timeline-time">Then</div>
               <div className="timeline-copy"><h3>Dinner &amp; laughter</h3><p>An evening around a shared table, with plenty of time for stories.</p></div>
-            </div>
-            <div className="timeline-row">
+            </RevealItem>
+            <RevealItem className="timeline-row">
               <div className="timeline-time">Before we part</div>
               <div className="timeline-copy"><h3>Blessings</h3><p>A little love, a few good wishes, and memories to take home.</p></div>
-            </div>
-          </div>
+            </RevealItem>
+          </RevealGroup>
         </div>
-      </section>
+      </Reveal>
 
-      <section className="section rsvp-section" id="rsvp" data-testid="section-rsvp">
-        <div className="section-inner rsvp-layout">
+      <Reveal as="section" className="section rsvp-section" data-testid="section-rsvp">
+        <div className="section-inner rsvp-layout" id="rsvp">
           <div className="rsvp-copy">
             <p className="section-kicker">A place for you</p>
             <h2 className="section-title">Will we<br />see you there?</h2>
@@ -426,7 +474,7 @@ function Home() {
             </form>
           )}
         </div>
-      </section>
+      </Reveal>
 
       <footer className="footer" data-testid="section-footer">
         <div className="footer-monogram" aria-hidden="true">B&amp;B</div>
